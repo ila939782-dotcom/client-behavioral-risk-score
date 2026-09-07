@@ -9,11 +9,9 @@ venv/
 .vscode/
 .idea/
 
-# Downloaded / generated data
-data/*.xls
-data/*.xlsx
-data/*.zip
+# Generated data and outputs
 data/*.sqlite
+data/*.zip
 outputs/*
 !outputs/.gitkeep
 figures/*
