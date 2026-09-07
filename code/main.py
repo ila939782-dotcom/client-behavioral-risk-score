@@ -1,4 +1,4 @@
-"""Client Behavioral Risk Score: complete analysis in one file."""
+"""Client Behavioral Risk Score."""
 
 from pathlib import Path
 import sqlite3
