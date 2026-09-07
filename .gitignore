@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# macOS / editors
+.DS_Store
+.vscode/
+.idea/
+
+# Downloaded / generated data
+data/*.xls
+data/*.xlsx
+data/*.zip
+data/*.sqlite
+outputs/*
+!outputs/.gitkeep
+figures/*
+!figures/.gitkeep
