@@ -1,164 +1,110 @@
 # Client Behavioral Risk Score
 
-Educational laboratory project that builds a client-level behavioral credit-risk score from the **UCI Default of Credit Card Clients** dataset.
+## 1. Назначение
 
-The project combines **Python/Pandas**, **SQL/SQLite**, **scikit-learn**, **statsmodels**, and **Power BI/DAX** in one reproducible analytical pipeline.
+Лабораторная работа по построению индивидуальной оценки риска дефолта клиента на основании его профиля и истории платёжного поведения.
 
-## Project goal
+Результатом работы является показатель `risk_score` в диапазоне от 0 до 100 и отнесение клиента к одной из пяти риск-групп A–E.
 
-The main question is whether recent payment behavior adds useful information for estimating next-month default risk compared with basic client profile variables alone.
+## 2. Исходные данные
 
-The pipeline:
+Источник: набор **Default of Credit Card Clients**, UCI Machine Learning Repository.
 
-1. loads the original UCI spreadsheet;
-2. restructures six months of payment history;
-3. stores analytical tables in SQLite;
-4. builds behavioral features in SQL;
-5. compares baseline and behavioral risk models;
-6. converts predicted default probability into a `risk_score` from 0 to 100;
-7. groups clients into risk bands A-E;
-8. evaluates a limited manual-review scenario;
-9. exports tables for further analysis in Excel and Power BI.
+Исходный файл:
 
-## Tech stack
+```text
+data/uci_default.xls
+```
 
-- Python
-- Pandas / NumPy
-- SQLite / SQL
-- scikit-learn
-- statsmodels
-- Matplotlib
-- Power BI / DAX
+Объём набора данных — 30 000 клиентов. Для каждого клиента представлены характеристики кредитного лимита, возраста, образования и семейного положения, а также история статуса платежей, выставленных счетов и фактических платежей за шесть месяцев.
 
-## Repository structure
+Целевая переменная — факт дефолта в следующем месяце (`default payment next month`).
+
+## 3. Состав репозитория
 
 ```text
 client-behavioral-risk-score/
+├── data/
+│   └── uci_default.xls
 ├── src/
-│   ├── prepare_data.py       # download and prepare source data
-│   ├── analyze.py            # train models, score clients, export diagnostics
-│   └── verify.py             # consistency and reproducibility checks
+│   ├── prepare_data.py
+│   ├── analyze.py
+│   └── verify.py
 ├── sql/
-│   ├── 01_feature_mart.sql   # behavioral feature engineering
+│   ├── 01_feature_mart.sql
 │   └── 02_portfolio_queries.sql
 ├── powerbi/
-│   └── measures.dax          # measures for the Power BI report
-├── data/                     # local raw data / SQLite database (not committed)
-├── outputs/                  # generated analytical outputs (not committed)
-├── figures/                  # generated figures (not committed)
-├── PROJECT_EXPLANATION_RU.md # detailed explanation in Russian
+│   └── measures.dax
+├── outputs/
+├── figures/
+├── PROJECT_EXPLANATION_RU.md
 ├── requirements.txt
 ├── .gitignore
 └── README.md
 ```
 
-## Data and features
+Назначение основных файлов:
 
-The source dataset contains **30,000 clients** and six monthly observations of payment status, bill amounts, and payments.
+- `src/prepare_data.py` — подготовка исходных данных, формирование локальной SQLite-базы и аналитической витрины;
+- `sql/01_feature_mart.sql` — расчёт признаков на уровне клиента;
+- `sql/02_portfolio_queries.sql` — контрольные запросы по портфелю;
+- `src/analyze.py` — обучение моделей, расчёт метрик и индивидуального risk score;
+- `src/verify.py` — контроль структуры данных и результатов расчёта;
+- `powerbi/measures.dax` — меры для визуализации результатов в Power BI;
+- `PROJECT_EXPLANATION_RU.md` — подробное пояснение логики проекта.
 
-The SQL feature mart creates one analytical row per client. Behavioral features include:
+## 4. Порядок запуска
 
-- latest payment delay;
-- share of previous months with a delay;
-- maximum previous delay;
-- change in delay;
-- credit-limit utilization;
-- change in utilization;
-- average payment amount;
-- share of zero-payment months.
-
-Basic profile variables include credit limit, age, education, and marital status.
-
-## Models
-
-Three specifications are compared:
-
-- **Profile** — logistic regression using only profile variables;
-- **Full** — logistic regression using profile + behavioral features;
-- **Boosting** — `HistGradientBoostingClassifier` using the full feature set.
-
-Validation and test metrics include:
-
-- ROC-AUC;
-- Brier Score;
-- Log Loss;
-- Precision;
-- Recall.
-
-The **Full** logistic model is used for the final score:
-
-```text
-risk_score = probability_of_default × 100
-```
-
-`statsmodels.Logit` is also fitted with the same logistic specification to export coefficient-level statistical diagnostics such as p-values, confidence intervals, and odds ratios.
-
-## Train / validation / test split
-
-The data is split approximately into:
-
-- 60% train;
-- 20% validation;
-- 20% test.
-
-Identical raw predictor rows are grouped so that duplicates do not appear in different splits.
-
-## Manual-review scenario
-
-The test sample is ranked by predicted default probability. The project evaluates how many defaults can be captured when only the top:
-
-- 5%;
-- 10%;
-- 20%
-
-of highest-risk clients can be reviewed manually. The exported metrics include review precision, capture/recall, and lift.
-
-## How to run
-
-Python 3.11+ is recommended.
-
-### macOS / Linux
+Установить зависимости:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+```
 
+Выполнить последовательно:
+
+```bash
 python src/prepare_data.py
 python src/analyze.py
 python src/verify.py
 ```
 
-`prepare_data.py` downloads the original UCI dataset automatically if it is not already present in `data/`.
+Скрипты запускаются из корневой директории репозитория. Если исходный файл отсутствует в `data/`, `prepare_data.py` выполняет его загрузку из UCI Machine Learning Repository.
 
-## Generated outputs
+## 5. Формируемые результаты
 
-After a successful run, `outputs/` contains files such as:
+После выполнения проекта в каталоге `outputs/` формируются:
 
-- `feature_mart.csv`;
-- `payment_history.csv`;
-- `metrics.csv`;
-- `client_scores.csv`;
-- `coefficients.csv`;
-- `risk_bands.csv`;
-- `review_capacity.csv`;
-- `score_model.json`;
-- `summary.json`.
+- `feature_mart.csv` — аналитическая витрина признаков;
+- `payment_history.csv` — история платежей в длинном формате;
+- `metrics.csv` — метрики качества моделей;
+- `client_scores.csv` — индивидуальные оценки риска клиентов;
+- `coefficients.csv` — коэффициенты и статистические характеристики логистической модели;
+- `risk_bands.csv` — показатели по риск-группам;
+- `review_capacity.csv` — результаты сценариев ограниченной ручной проверки;
+- `score_model.json` — параметры итоговой модели;
+- `summary.json` — контрольные результаты расчёта.
 
-`figures/model_quality.png` contains a compact model-quality visualization.
+В каталоге `figures/` формируется файл `model_quality.png`.
 
-## Power BI
+## 6. Контроль воспроизводимости
 
-`powerbi/measures.dax` contains measures for portfolio size, defaults, default rate, mean PD, mean risk score, model-quality metrics, and the limited review-capacity scenario.
+Скрипт `src/verify.py` проверяет:
 
-## Data source
+- наличие 30 000 уникальных клиентов;
+- наличие 180 000 клиент-месяцев истории;
+- наличие шести наблюдений на каждого клиента;
+- отсутствие пропусков в итоговой таблице;
+- диапазон `risk_score` от 0 до 100;
+- отсутствие пересечения одинаковых исходных наблюдений между выборками;
+- соответствие сохранённого score формуле итоговой модели.
 
-Yeh, I. (2009). **Default of Credit Card Clients**. UCI Machine Learning Repository.
+## 7. Источник данных
 
-- Dataset ID: 350
-- DOI: `10.24432/C55S3H`
-- Data license: CC BY 4.0
+Yeh, I. (2009). *Default of Credit Card Clients*. UCI Machine Learning Repository.
 
-## Notes
+DOI: `10.24432/C55S3H`
 
-This is an **educational analytical project**, not a production credit-scoring system. The resulting score should not be used for real lending decisions without independent validation, governance, fairness analysis, and applicable regulatory review.
+Лицензия исходных данных: CC BY 4.0.
